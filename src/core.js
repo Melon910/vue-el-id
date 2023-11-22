@@ -1,13 +1,13 @@
-import { parse } from '@vue/compiler-sfc';
-import * as htmlparser2 from 'htmlparser2';
-import prettier from 'prettier';
+const { parse } = require('@vue/compiler-sfc');
+const htmlparser2 = require('htmlparser2');
+const prettier = require('prettier');
 
 function parseTagAttribute(attributes) {
   let attrs = '';
   for (const key in attributes) {
     const attrValue = attributes[key];
-    if (attrValue === undefined) {
-      attrs += ` =${key} `;
+    if (attrValue === undefined || attrValue === true) {
+      attrs += ` ${key} `;
     } else {
       attrs += ` ${key}="${attrValue}" `;
     }
@@ -34,6 +34,7 @@ function handleTemplate(template, cb = () => {}) {
   let htmlString = `<${type}>`;
   const parser = new htmlparser2.Parser({
     onopentag(tagname, attributes) {
+      console.log('tagname',tagname);
       const cbResult = cb(tagname);
       // 传入标签上已有的attr和生成的attr
       // attributes会覆盖cbResult生成的attr 旧的attr会一直在
@@ -64,13 +65,7 @@ function handleTemplate(template, cb = () => {}) {
 function handleScript(script) {
   const { type, content, attrs } = script;
   let scriptCode = `<${type}`;
-  Object.keys(attrs).forEach((key) => {
-    if (attrs[key] === true) {
-      scriptCode += ` ${key}`;
-    } else {
-      scriptCode += ` ${key}="${attrs[key]}"`;
-    }
-  });
+  scriptCode += parseTagAttribute(attrs);
   scriptCode += '>';
   scriptCode += content;
   scriptCode += `</${type}>`;
@@ -80,20 +75,13 @@ function handleScript(script) {
 function handleStyle(style) {
   const { type, content, attrs } = style;
   let styleCode = `<${type}`;
-  Object.keys(attrs).forEach((key) => {
-    if (attrs[key] === true) {
-      styleCode += ` ${key}`;
-    } else {
-      styleCode += ` ${key}="${attrs[key]}"`;
-    }
-  });
+  styleCode += parseTagAttribute(attrs);
   styleCode += '>';
   styleCode += content;
   styleCode += `</${type}>`;
   return styleCode;
 }
-
-export default async function transformVue(code, sourceFilePath, cb) {
+exports.transformVue = async function (code, sourceFilePath, cb) {
   // 解析模板代码，返回描述符和错误数组
   const { descriptor, errors } = parse(code);
   if (errors.length > 0) {
@@ -125,4 +113,4 @@ export default async function transformVue(code, sourceFilePath, cb) {
   return {
     code: codeStr,
   };
-}
+};

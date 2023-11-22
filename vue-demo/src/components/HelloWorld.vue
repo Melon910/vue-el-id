@@ -1,12 +1,14 @@
 <template>
-  <h1>{{ msg + '---组合' }}</h1>
+  <h1>{{ msg + "---组合" }}</h1>
 
   <div class="card">
-    <button type="button" @click="count++">数量为 {{ count }}</button>
+    <button type="button" @click="count++">
+      数量为 {{ count }}
+    </button>
   </div>
 </template>
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref } from "vue";
 
 defineProps<{ msg: string }>();
 

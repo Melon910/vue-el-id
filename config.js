@@ -1,7 +1,7 @@
-import { randomUUID } from 'node:crypto';
+const { randomUUID } = require('node:crypto');
 
-export default {
-  input: './vue-demo',
+module.exports = {
+  input: './vue-demo/src/App.vue',
   callBackFn: (tagname) => {
     const randomStr = randomUUID().split('-').at(-1);
     return {

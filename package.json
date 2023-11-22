@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "用来给.vue文件的元素批量添加属性的小工具",
   "main": "index.js",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
