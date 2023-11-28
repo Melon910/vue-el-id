@@ -3,7 +3,7 @@ const path = require('node:path');
 const cliProgress = require('cli-progress');
 const { getVueSourceFilePaths } = require('./utils/common.js');
 const { transformVue } = require('./core.js');
-
+const configFilePath = path.resolve(path.join(process.cwd(), 'config.js'));
 // const handleVue = (filePath, callBackFn) => {
 //   if (!filePath) return;
 //   const filePathList = getVueSourceFilePaths(filePath);
@@ -34,6 +34,7 @@ if (!fs.existsSync(configFilePath)) {
 } else {
   const config = require(configFilePath);
   const { input, callBackFn } = config;
+
   const filePathList = getVueSourceFilePaths(input);
   if (input) {
     const bar = new cliProgress.SingleBar(
@@ -43,7 +44,7 @@ if (!fs.existsSync(configFilePath)) {
       cliProgress.Presets.shades_classic
     );
     let length = filePathList.length;
-    bar.start(length, 0);
+    // bar.start(length, 0);
     filePathList.forEach(async (filePath) => {
       const sourceCode = fs.readFileSync(filePath, 'utf8');
       const { code } = await transformVue(sourceCode, filePath, callBackFn);
@@ -56,6 +57,7 @@ if (!fs.existsSync(configFilePath)) {
     });
   }
 }
+
 // module.exports = {
 //   handleVue,
 // };

@@ -1,12 +1,12 @@
 const { parse } = require('@vue/compiler-sfc');
 const htmlparser2 = require('htmlparser2');
 const prettier = require('prettier');
-
 function parseTagAttribute(attributes) {
   let attrs = '';
   for (const key in attributes) {
     const attrValue = attributes[key];
-    if (attrValue === undefined || attrValue === true) {
+    // value 不存在 或者为 true 都简写
+    if (!attrValue || attrValue === true) {
       attrs += ` ${key} `;
     } else {
       attrs += ` ${key}="${attrValue}" `;
@@ -20,6 +20,7 @@ async function formatCode(code, prettierConfig = {}) {
   stylizedCode = await prettier.format(code, {
     ...prettierConfig,
     parser: 'vue',
+    endOfLine: 'crlf',
   });
   return stylizedCode;
 }
@@ -32,33 +33,39 @@ function handleTemplate(template, cb = () => {}) {
     throw new Error(`文件${sourceFilePath}缺少模板内容`);
   }
   let htmlString = `<${type}>`;
-  const parser = new htmlparser2.Parser({
-    onopentag(tagname, attributes) {
-      console.log('tagname', tagname);
-      const cbResult = cb(tagname);
-      // 传入标签上已有的attr和生成的attr
-      // attributes会覆盖cbResult生成的attr 旧的attr会一直在
-      const attr = `${parseTagAttribute({ ...cbResult, ...attributes })}`;
-      htmlString += `<${tagname} ${attr}>`;
+  const parser = new htmlparser2.Parser(
+    {
+      onopentag(tagname, attributes) {
+        const cbResult = cb(tagname);
+        // 传入标签上已有的attr和生成的attr
+        // attributes会覆盖cbResult生成的attr 旧的attr会一直在
+        const attr = `${parseTagAttribute({ ...cbResult, ...attributes })}`;
+        htmlString += `<${tagname} ${attr}>`;
+      },
+      ontext(text) {
+        htmlString += text;
+      },
+      onclosetag(tagname, isImplied) {
+        // 自闭合标签
+        if (isImplied) {
+          // 前面在open的时候拼上了> 自闭合标签需要替换成/>
+          htmlString = htmlString.slice(0, htmlString.lastIndexOf('>')) + '/>';
+        } else {
+          htmlString += `</${tagname}>`;
+        }
+      },
+      // 注释直接拼接
+      oncomment(comment) {
+        htmlString += `<!--${comment}-->`;
+      },
     },
-    ontext(text) {
-      htmlString += text;
-    },
-    onclosetag(tagname, isImplied) {
-      // 自闭合标签
-      if (isImplied) {
-        // 前面在open的时候拼上了> 自闭合标签需要替换成/>
-        htmlString =
-          htmlString.slice(0, htmlString.lastIndexOf('>') - 1) + '/>';
-        return;
-      }
-      htmlString += `</${tagname}>`;
-    },
-    // 注释直接拼接
-    oncomment(comment) {
-      htmlString += `<!--${comment}-->`;
-    },
-  });
+    {
+      lowerCaseTags: false,
+      recognizeSelfClosing: true,
+      lowerCaseAttributeNames: false,
+      decodeEntities: false,
+    }
+  );
   parser.write(content);
   parser.end();
   htmlString += `</${type}>`;
@@ -89,8 +96,9 @@ exports.transformVue = async function (code, sourceFilePath, cb) {
   if (errors.length > 0) {
     const positon = errors[0].loc.start;
     throw new Error(
-      `文件${sourceFilePath}在第${positon.line}行第${positon.column}列出错`,
-      errors[0].toString()
+      `文件${sourceFilePath}在第${positon.line}行第${
+        positon.column
+      }列出错,${errors[0].toString()}`
     );
   }
   // 从描述符中获取模板
