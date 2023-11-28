@@ -1,7 +1,7 @@
 const { randomUUID } = require('node:crypto');
 
 module.exports = {
-  input: './src/App.vue',
+  input: './src/test.vue',
   callBackFn: (tagname) => {
     const randomStr = randomUUID().split('-').at(0);
     return {
