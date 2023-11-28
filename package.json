@@ -1,6 +1,6 @@
 {
   "name": "vue-el-id",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "用来给.vue文件的元素批量添加属性的小工具",
   "main": "index.js",
   "type": "commonjs",
