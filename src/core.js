@@ -34,7 +34,7 @@ function handleTemplate(template, cb = () => {}) {
   let htmlString = `<${type}>`;
   const parser = new htmlparser2.Parser({
     onopentag(tagname, attributes) {
-      console.log('tagname',tagname);
+      console.log('tagname', tagname);
       const cbResult = cb(tagname);
       // 传入标签上已有的attr和生成的attr
       // attributes会覆盖cbResult生成的attr 旧的attr会一直在
@@ -47,7 +47,9 @@ function handleTemplate(template, cb = () => {}) {
     onclosetag(tagname, isImplied) {
       // 自闭合标签
       if (isImplied) {
-        htmlString = htmlString.slice(0, htmlString.length - 2) + '/>';
+        // 前面在open的时候拼上了> 自闭合标签需要替换成/>
+        htmlString =
+          htmlString.slice(0, htmlString.lastIndexOf('>') - 1) + '/>';
         return;
       }
       htmlString += `</${tagname}>`;
