@@ -1,6 +1,36 @@
 const { parse } = require('@vue/compiler-sfc');
 const htmlparser2 = require('htmlparser2');
 const prettier = require('prettier');
+const { getVForInTarget } = require('./utils/common');
+
+function handleTemplateAttribute(cbResult, attributes) {
+  // 属性上没有v-for 直接返回 无需处理
+  if (attributes && !Object.hasOwn(attributes, 'v-for')) return cbResult;
+
+  const newCbResult = {};
+  for (const key in cbResult) {
+    if (Object.hasOwnProperty.call(cbResult, key)) {
+      newCbResult[`:${key}`] = '`' + cbResult[key] + '`';
+    }
+  }
+  const target = getVForInTarget(`${attributes['v-for']}`);
+  if (target) {
+    const { item, index, symbol, list } = target;
+    let vForIndexStr = index;
+    if (!index) {
+      attributes['v-for'] = `(${item},index) ${symbol} ${list}`;
+      vForIndexStr = 'index';
+    }
+    for (const key in newCbResult) {
+      if (Object.hasOwnProperty.call(newCbResult, key)) {
+        newCbResult[key] =
+          newCbResult[key].slice(0, -2) + '${' + vForIndexStr + '}`';
+      }
+    }
+  }
+  return newCbResult;
+}
+
 function parseTagAttribute(attributes) {
   let attrs = '';
   for (const key in attributes) {
@@ -39,7 +69,8 @@ function handleTemplate(template, cb = () => {}) {
         const cbResult = cb(tagname);
         // 传入标签上已有的attr和生成的attr
         // attributes会覆盖cbResult生成的attr 旧的attr会一直在
-        const attr = `${parseTagAttribute({ ...cbResult, ...attributes })}`;
+        const newCbResult = handleTemplateAttribute(cbResult, attributes);
+        const attr = `${parseTagAttribute({ ...newCbResult, ...attributes })}`;
         htmlString += `<${tagname} ${attr}>`;
       },
       ontext(text) {
